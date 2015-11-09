@@ -7,7 +7,8 @@ module VagrantCloner
                       :vm_db_user, :vm_db_password,
                       :databases_to_clone,
                       :remote_backup_path, :local_backup_path, :vm_backup_path, :backup_file,
-                      :disable_cleanup, :warned_about_password
+                      :disable_cleanup, :warned_about_password,
+                      :mysqldump_tags
 
       def name
         "mysql"
@@ -71,6 +72,8 @@ module VagrantCloner
 
         @databases_to_clone     = options.databases_to_clone
 
+        @mysqldump_tags         = options.mysqldump_tags
+
         @vm_db_user             = options.vm_db_user
         @vm_db_password         = options.vm_db_password
 
@@ -118,7 +121,7 @@ module VagrantCloner
 
       def remote_dump_and_pipe
         info "Doing remote mysqldump..."
-        command = %Q{mysqldump --verbose -h #{@remote_host} -u"#{@remote_user}"#{mysql_password_flag(@remote_password)} #{mysql_database_flag} | mysql -u"#{@vm_db_user}"#{mysql_password_flag(@vm_db_password)}}
+        command = %Q{mysqldump --verbose -h #{@remote_host} -u"#{@remote_user}"#{mysql_password_flag(@remote_password)} #{mysqldump_tags} #{mysql_database_flag} | mysql -u"#{@vm_db_user}"#{mysql_password_flag(@vm_db_password)}}
         vm.tap do |host|
           vm.execute command
         end
@@ -126,7 +129,7 @@ module VagrantCloner
       end
 
       def dump_remote_database
-        command = %Q{mysqldump -u"#{@remote_db_user}"#{mysql_password_flag(@remote_db_password)} #{mysql_database_flag} > #{@remote_backup_location}}
+        command = %Q{mysqldump -u"#{@remote_db_user}"#{mysql_password_flag(@remote_db_password)} #{mysqldump_tags} #{mysql_database_flag} > #{@remote_backup_location}}
         ssh(*remote_credentials) {|s| s.exec! command }
         info "Finished dumping database!"
       end
